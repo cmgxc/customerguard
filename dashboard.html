@@ -55,7 +55,27 @@
   .legrow .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; margin-right: 8px; }
   .legrow .n { font-family: var(--mono); color: var(--muted); }
 
-  .controls { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+  .insight { background: linear-gradient(90deg, rgba(110,168,254,.14), rgba(110,168,254,.03)); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 10px; padding: 13px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.5; }
+  .insight b { color: var(--accent); font-weight: 650; }
+  .controls { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .sortbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+  .sortlabel { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-right: 2px; }
+  .sortbtn { background: transparent; border: 1px solid var(--line); color: var(--muted); font-size: 12px; padding: 5px 12px; border-radius: 7px; cursor: pointer; font-family: inherit; transition: all .15s; }
+  .sortbtn:hover { color: var(--text); }
+  .sortbtn.active { background: var(--panel-2); border-color: var(--accent); color: var(--text); }
+  .acct { cursor: pointer; }
+  .detail { grid-column: 1 / -1; margin-top: 4px; border-top: 1px dashed var(--line); padding-top: 14px; display: none; }
+  .acct.open .detail { display: block; }
+  .acct .chev { transition: transform .2s; display: inline-block; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .acct.open .chev { transform: rotate(90deg); }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px 16px; }
+  .dstat { background: var(--panel-2); border-radius: 7px; padding: 9px 11px; }
+  .dstat .dl { font-size: 10px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .dstat .dv { font-size: 16px; font-weight: 600; margin-top: 3px; font-variant-numeric: tabular-nums; }
+  .dstat .dv.warn { color: var(--critical); }
+  .dstat .dv.good { color: var(--healthy); }
+  .detail-note { margin-top: 12px; font-size: 12px; color: var(--muted); }
+  .detail-note code { font-family: var(--mono); color: var(--accent); }
   .filter { background: var(--panel-2); border: 1px solid var(--line); color: var(--muted); font-size: 12px; padding: 6px 13px; border-radius: 20px; cursor: pointer; font-family: inherit; transition: all .15s; }
   .filter:hover { color: var(--text); }
   .filter.active { background: var(--accent); border-color: var(--accent); color: #0b1220; font-weight: 600; }
@@ -114,11 +134,18 @@
   </div>
 
   <div>
+    <div class="insight" id="insight"></div>
     <div class="controls" id="filters">
       <button class="filter active" data-f="all">All accounts</button>
       <button class="filter" data-f="churn">Churn risk</button>
       <button class="filter" data-f="expansion">Expansion</button>
       <button class="filter" data-f="Critical">Critical</button>
+    </div>
+    <div class="sortbar">
+      <span class="sortlabel">Sort by</span>
+      <button class="sortbtn active" data-s="health">Health</button>
+      <button class="sortbtn" data-s="arr">ARR</button>
+      <button class="sortbtn" data-s="renewal">Renewal date</button>
     </div>
     <div class="accounts" id="accounts"></div>
   </div>
@@ -181,21 +208,71 @@ document.getElementById('legend').innerHTML = [
   ['Healthy', s.healthy, C.Healthy], ['At-Risk', s.at_risk, C['At-Risk']], ['Critical', s.critical, C.Critical]
 ].map(([l, n, c]) => `<div class="legrow"><span><span class="dot" style="background:${c}"></span>${l}</span><span class="n">${n}</span></div>`).join('');
 
-// Accounts
+// ---- Insight strip: an auto-generated takeaway, like a CSM's weekly summary ----
+(function insight() {
+  const at = DATA.accounts.filter(a => a.status !== 'Healthy');
+  const worst = DATA.accounts.reduce((m, a) => a.health_score < m.health_score ? a : m, DATA.accounts[0]);
+  const soon = DATA.accounts.filter(a => a.days_to_renewal <= 45 && a.status !== 'Healthy');
+  const exp = DATA.accounts.filter(a => a.flag === 'expansion');
+  document.getElementById('insight').innerHTML =
+    `<b>${at.length} accounts</b> need attention (<b>$${s.arr_at_risk.toLocaleString()}</b> ARR at risk). ` +
+    `${soon.length ? `<b>${soon.length}</b> are at risk with renewals inside 45 days. ` : ''}` +
+    `Top priority: <b>${worst.name}</b> (health ${worst.health_score}). ` +
+    `<b>${exp.length}</b> healthy accounts show expansion headroom.`;
+})();
+
+// ---- Accounts (filter + sort + expandable detail) ----
+let curFilter = 'all', curSort = 'health';
+
 function bar(label, val) {
   return `<div class="bar"><div class="blab"><span>${label}</span><span>${val}</span></div><div class="track"><div class="fill" style="width:${val}%"></div></div></div>`;
 }
-function render(filter) {
-  const list = DATA.accounts.filter(a => {
-    if (filter === 'all') return true;
-    if (filter === 'churn' || filter === 'expansion') return a.flag === filter;
-    return a.status === filter;
+function dstat(label, val, cls) {
+  return `<div class="dstat"><div class="dl">${label}</div><div class="dv ${cls||''}">${val}</div></div>`;
+}
+function detailPanel(a) {
+  const ss = a.sub_scores;
+  const seatPct = Math.round(a.seats_active / a.seats_licensed * 100);
+  const vulnCls = a.open_critical_vulns >= 8 ? 'warn' : (a.open_critical_vulns === 0 ? 'good' : '');
+  const remCls = a.pct_remediated >= 85 ? 'good' : (a.pct_remediated < 50 ? 'warn' : '');
+  return `<div class="detail">
+    <div class="detail-grid">
+      ${dstat('Seats active', `${a.seats_active} / ${a.seats_licensed}`, seatPct >= 90 ? 'good' : (seatPct < 50 ? 'warn' : ''))}
+      ${dstat('Logins (30d)', a.logins_last_30d)}
+      ${dstat('Scans (30d)', a.scans_last_30d)}
+      ${dstat('Open critical vulns', a.open_critical_vulns, vulnCls)}
+      ${dstat('Remediated', a.pct_remediated + '%', remCls)}
+      ${dstat('Support tickets (30d)', a.support_tickets_30d, a.support_tickets_30d >= 5 ? 'warn' : '')}
+      ${dstat('Renewal in', a.days_to_renewal + ' days', a.days_to_renewal <= 45 ? 'warn' : '')}
+      ${dstat('Plan tier', a.tier)}
+      ${a.live_activity ? dstat('Live signal (API)', a.live_activity.recent_commits_30d + ' events/30d') : ''}
+    </div>
+    <div class="detail-note">
+      Sub-scores &rarr; Adoption <code>${ss.adoption}</code> · Engagement <code>${ss.engagement}</code> · Security outcome <code>${ss.security}</code> · Support <code>${ss.support}</code>.
+      Health = 35% Adoption + 25% Engagement + 25% Security + 15% Support = <code>${a.health_score}</code>.
+      ${a.live_activity ? `Live signal pulled from <code>${a.live_activity.repo}</code> via ${a.live_activity.source}.` : ''}
+    </div>
+  </div>`;
+}
+function sortList(list) {
+  const s = [...list];
+  if (curSort === 'health') s.sort((a, b) => a.health_score - b.health_score);         // worst first
+  else if (curSort === 'arr') s.sort((a, b) => b.arr - a.arr);                          // biggest first
+  else if (curSort === 'renewal') s.sort((a, b) => a.days_to_renewal - b.days_to_renewal); // soonest first
+  return s;
+}
+function render() {
+  let list = DATA.accounts.filter(a => {
+    if (curFilter === 'all') return true;
+    if (curFilter === 'churn' || curFilter === 'expansion') return a.flag === curFilter;
+    return a.status === curFilter;
   });
+  list = sortList(list);
   document.getElementById('accounts').innerHTML = list.map(a => {
     const ss = a.sub_scores;
-    return `<div class="acct s-${a.status.replace(' ', '-')}">
+    return `<div class="acct s-${a.status.replace(' ', '-')}" data-name="${a.name}">
       <div>
-        <div class="name">${a.name}</div>
+        <div class="name">${a.name}<span class="chev">&#9654;</span></div>
         <div class="meta">${a.tier} · $${a.arr.toLocaleString()} ARR · renews in ${a.days_to_renewal}d${a.live_activity ? ` · <span class="live">● live: ${a.live_activity.recent_commits_30d} events/30d</span>` : ''}</div>
       </div>
       <div class="score-badge">
@@ -206,16 +283,31 @@ function render(filter) {
         ${bar('Adoption', ss.adoption)}${bar('Engage', ss.engagement)}${bar('Security', ss.security)}${bar('Support', ss.support)}
       </div>
       <div class="action"><span class="tag ${a.flag}">${a.flag}</span><span>${a.recommended_action}</span></div>
+      ${detailPanel(a)}
     </div>`;
   }).join('');
+
+  // expand/collapse on click
+  document.querySelectorAll('.acct').forEach(card => {
+    card.addEventListener('click', () => card.classList.toggle('open'));
+  });
 }
-render('all');
+render();
 
 document.querySelectorAll('.filter').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.filter').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    render(btn.dataset.f);
+    curFilter = btn.dataset.f;
+    render();
+  });
+});
+document.querySelectorAll('.sortbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sortbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    curSort = btn.dataset.s;
+    render();
   });
 });
 </script>
