@@ -1,0 +1,34 @@
+{
+  "Meridian Health Systems": {
+    "repo": "python/cpython",
+    "recent_commits": 100
+  },
+  "Coastal Credit Union": {
+    "repo": "openssl/openssl",
+    "recent_commits": 100
+  },
+  "Vantage Logistics": {
+    "repo": "pallets/flask",
+    "recent_commits": 16
+  },
+  "Brightwave Media": {
+    "repo": "psf/requests",
+    "recent_commits": 6
+  },
+  "Ironclad Manufacturing": {
+    "repo": "torvalds/linux",
+    "recent_commits": 100
+  },
+  "Northstar Energy": {
+    "repo": "kubernetes/kubernetes",
+    "recent_commits": 87
+  },
+  "Cedar Point Software": {
+    "repo": "django/django",
+    "recent_commits": 75
+  },
+  "Apex Biotech": {
+    "repo": "numpy/numpy",
+    "recent_commits": 100
+  }
+}
