@@ -4,7 +4,7 @@ A customer health dashboard for a security SaaS, modeling the account-health ana
 
 Given a portfolio of customer accounts, CustomerGuard scores each account's health from weighted usage and security signals, flags churn risks and expansion opportunities, and turns each into a plain-English recommended action, then presents it all in a web dashboard and an exportable spreadsheet.
 
-> **Honest framing:** This is an applied project I built with AI-assisted development to model a real customer-success workflow. The account data is synthetic by design, so the focus stays on the health-scoring logic and the integration, not on any real customer data. It is a learning-and-portfolio project, not production software.
+> **Context:** This is an applied project I built with AI-assisted development to model a real customer-success workflow. The account data is synthetic by design, so the focus stays on the health-scoring logic and the integration, not on any real customer data. It is a learning-and-portfolio project, not production software.
 
 ## Why I built it
 
