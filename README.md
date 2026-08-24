@@ -10,7 +10,7 @@ Given a portfolio of customer accounts, CustomerGuard scores each account's heal
 
 I spent 10+ years in B2B SaaS owning customer relationships, onboarding, adoption, renewals, and expansion, and I am moving into technical customer success and technical account management. Those roles run on exactly this analysis: watch account health, catch churn risk early, spot expansion, and know what to do about each. I built CustomerGuard to model that workflow end to end and to keep sharpening my applied technical skills (Python, REST APIs, and building with AI-assisted tools).
 
-![CustomerGuard dashboard](screenshot.png)
+![CustomerGuard dashboard](demo.gif)
 
 ## What it does
 
