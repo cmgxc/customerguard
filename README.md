@@ -1,16 +1,18 @@
 # CustomerGuard
 
+**[▶ Open the live dashboard](https://cmgxc.github.io/customerguard/)** — interactive, runs in your browser, no setup needed.
+
 A customer health dashboard for a security SaaS, modeling the account-health analysis a Technical Account Manager or Customer Success Manager runs on their book of business.
 
 Given a portfolio of customer accounts, CustomerGuard scores each account's health from weighted usage and security signals, flags churn risks and expansion opportunities, and turns each into a plain-English recommended action, then presents it all in a web dashboard and an exportable spreadsheet.
 
-> **Context:** This is an applied project I built with AI-assisted development to model a real customer-success workflow. The account data is synthetic by design, so the focus stays on the health-scoring logic and the integration, not on any real customer data. It is a learning-and-portfolio project, not production software.
+> **Honest framing:** This is an applied project I built with AI-assisted development to model a real customer-success workflow. The account data is synthetic by design, so the focus stays on the health-scoring logic and the integration, not on any real customer data. It is a learning-and-portfolio project, not production software.
 
 ## Why I built it
 
 I spent 10+ years in B2B SaaS owning customer relationships, onboarding, adoption, renewals, and expansion, and I am moving into technical customer success and technical account management. Those roles run on exactly this analysis: watch account health, catch churn risk early, spot expansion, and know what to do about each. I built CustomerGuard to model that workflow end to end and to keep sharpening my applied technical skills (Python, REST APIs, and building with AI-assisted tools).
 
-![CustomerGuard dashboard](demo.gif)
+[![CustomerGuard dashboard](demo.gif)](https://cmgxc.github.io/customerguard/)
 
 ## What it does
 
